@@ -7,6 +7,8 @@ const purple = Color(0xff4340CB);
 const pink = Color(0xffCB40B5);
 const orange = Color(0xffDE643E);
 
+
+
 TextStyle gradientStyle = TextStyle(
   fontFamily: 'Viga',
   fontWeight: FontWeight.w400,
@@ -87,3 +89,7 @@ class ContinueButton extends StatelessWidget {
     );
   }
 }
+
+
+
+
