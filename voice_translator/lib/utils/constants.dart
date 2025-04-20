@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:voice_translator/services/services.dart';
 
 const bgColor = Color(0xffF9F9F9);
 const darkGrey = Color(0xff3A3A3A);
@@ -88,13 +90,19 @@ class ContinueButton extends StatelessWidget {
   }
 }
 
+// ignore: must_be_immutable
 class TranslationTextContainer extends StatefulWidget {
+  TextEditingController controller = TextEditingController();
   final double size;
   final int linesNumber;
-  const TranslationTextContainer({
+  final String language;
+
+  TranslationTextContainer({
     super.key,
     required this.size,
     required this.linesNumber,
+    required this.controller,
+    required this.language
   });
 
   @override
@@ -103,7 +111,13 @@ class TranslationTextContainer extends StatefulWidget {
 }
 
 class _TranslationTextContainerState extends State<TranslationTextContainer> {
-  final TextEditingController _controller = TextEditingController();
+  final FlutterTts flutterTts = FlutterTts();
+
+  Future<void> speakText(String text) async {
+    await flutterTts.setLanguage(languages[widget.controller.text] ?? 'en');
+    await flutterTts.setSpeechRate(0.5); // Optional
+    await flutterTts.speak(text);
+  }
 
   @override
   void initState() {
@@ -112,7 +126,7 @@ class _TranslationTextContainerState extends State<TranslationTextContainer> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    widget.controller.dispose();
     super.dispose();
   }
 
@@ -144,14 +158,14 @@ class _TranslationTextContainerState extends State<TranslationTextContainer> {
               fontfamily: 'Viga',
               fontsize: 12,
               fontweight: FontWeight.w400,
-              text: 'English',
+              text: widget.language,
             ),
           ),
           const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
             child: TextField(
-              controller: _controller,
+              controller: widget.controller,
               keyboardType: TextInputType.multiline,
               maxLines: widget.linesNumber,
               decoration: const InputDecoration(
@@ -171,7 +185,11 @@ class _TranslationTextContainerState extends State<TranslationTextContainer> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    if (widget.controller.text.trim().isNotEmpty) {
+                      speakText(widget.controller.text);
+                    }
+                  },
                   icon: Icon(Icons.volume_up_sharp, color: lightGrey, size: 25),
                 ),
               ],
@@ -184,8 +202,13 @@ class _TranslationTextContainerState extends State<TranslationTextContainer> {
 }
 
 class BorderedButton extends StatefulWidget {
-  final String buttomText;
-  const BorderedButton({super.key, required this.buttomText});
+  final VoidCallback whenpressed;
+  final String buttonText;
+  const BorderedButton({
+    super.key,
+    required this.buttonText,
+    required this.whenpressed,
+  });
 
   @override
   State<BorderedButton> createState() => _BorderedButtonState();
@@ -212,7 +235,7 @@ class _BorderedButtonState extends State<BorderedButton> {
               borderRadius: BorderRadius.circular(18),
             ),
             child: OutlinedButton(
-              onPressed: () {},
+              onPressed: widget.whenpressed,
               style: OutlinedButton.styleFrom(
                 side:
                     BorderSide
@@ -227,7 +250,7 @@ class _BorderedButtonState extends State<BorderedButton> {
                 fontfamily: 'Viga',
                 fontsize: 16,
                 fontweight: FontWeight.w400,
-                text: widget.buttomText,
+                text: widget.buttonText,
               ),
             ),
           ),

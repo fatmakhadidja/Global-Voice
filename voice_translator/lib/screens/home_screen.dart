@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:translator/translator.dart';
 import 'package:voice_translator/utils/constants.dart';
+import 'package:voice_translator/services/services.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -9,12 +11,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Selected tab index
   int _selectedIndex = 0;
 
-  // Widgets for each tab
   final List<Widget> _widgets = [
-    const TextTranslation(key: ValueKey(0)), // Unique key for AnimatedSwitcher
+    const TextTranslation(key: ValueKey(0)),
     const VoiceTranslation(key: ValueKey(1)),
   ];
 
@@ -22,8 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-      resizeToAvoidBottomInset:
-          true, // Automatically resize to avoid keyboard overflow
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
@@ -74,48 +73,150 @@ class TextTranslation extends StatefulWidget {
 }
 
 class _TextTranslationState extends State<TextTranslation> {
+  TextEditingController sourceCtrl = TextEditingController();
+  TextEditingController targetCtrl = TextEditingController();
+  String selectedSourceLanguage = 'English';
+  String selectedTargetLanguage = 'Arabic';
+  GoogleTranslator translator = GoogleTranslator();
+
+  void showLanguagePicker(bool isSource, BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return ListView(
+          padding: const EdgeInsets.all(20),
+          children:
+              languages.keys
+                  .map(
+                    (language) => ListTile(
+                      title: Text(language),
+                      onTap: () {
+                        setState(() {
+                          if (isSource) {
+                            selectedSourceLanguage = language;
+                            sourceCtrl.text = '';
+                          } else {
+                            selectedTargetLanguage = language;
+                            targetCtrl.text = '';
+                          }
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                  )
+                  .toList(),
+        );
+      },
+    );
+  }
+
+  Future<void> translateText() async {
+    final sourceCode = languages[selectedSourceLanguage] ?? 'en';
+    final targetCode = languages[selectedTargetLanguage] ?? 'ar';
+    final text = sourceCtrl.text;
+
+    try {
+      var translation = await translator.translate(
+        text,
+        from: sourceCode,
+        to: targetCode,
+      );
+      setState(() {
+        targetCtrl.text = translation.text;
+      });
+    } catch (e) {
+      print("Error during translation: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                MyText(
-                  couleur: Colors.black,
-                  fontfamily: 'Viga',
-                  fontsize: 24,
-                  fontweight: FontWeight.w400,
-                  text: 'Global Voice',
-                ),
-              ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        MyText(
+                          couleur: Colors.black,
+                          fontfamily: 'Viga',
+                          fontsize: 24,
+                          fontweight: FontWeight.w400,
+                          text: 'Global Voice',
+                        ),
+                        ElevatedButton(
+                          onPressed: translateText,
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStatePropertyAll(
+                              Colors.black,
+                            ),
+                          ),
+                          child: MyText(
+                            couleur: Colors.white,
+                            fontfamily: 'Viga',
+                            fontsize: 12,
+                            fontweight: FontWeight.w400,
+                            text: 'Translate',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: TranslationTextContainer(
+                      size: 0.32,
+                      linesNumber: 6,
+                      controller: sourceCtrl,
+                      language: selectedSourceLanguage,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: TranslationTextContainer(
+                      size: 0.32,
+                      linesNumber: 6,
+                      controller: targetCtrl,
+                      language: selectedTargetLanguage,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        BorderedButton(
+                          buttonText: selectedSourceLanguage,
+                          whenpressed: () => showLanguagePicker(true, context),
+                        ),
+                        const Icon(
+                          Icons.arrow_right_alt_outlined,
+                          color: lightGrey,
+                        ),
+                        BorderedButton(
+                          buttonText: selectedTargetLanguage,
+                          whenpressed: () => showLanguagePicker(false, context),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: TranslationTextContainer(size: 0.33, linesNumber: 6),
-          ),
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: TranslationTextContainer(size: 0.33, linesNumber: 6),
-          ),
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                BorderedButton(buttomText: 'English'),
-                Icon(Icons.arrow_right_alt_outlined, color: lightGrey),
-                BorderedButton(buttomText: 'Arabic'),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -128,49 +229,108 @@ class VoiceTranslation extends StatefulWidget {
 }
 
 class _VoiceTranslationState extends State<VoiceTranslation> {
+  String selectedSourceLanguage = 'Auto';
+  String selectedTargetLanguage = 'English';
+  TextEditingController targetCtrl = TextEditingController();
+
+  void showLanguagePicker(bool isSource, BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return ListView(
+          padding: const EdgeInsets.all(20),
+          children:
+              languages.keys
+                  .map(
+                    (language) => ListTile(
+                      title: Text(language),
+                      onTap: () {
+                        setState(() {
+                          if (isSource) {
+                            selectedSourceLanguage = language;
+                          } else {
+                            selectedTargetLanguage = language;
+                          }
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                  )
+                  .toList(),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                MyText(
-                  couleur: Colors.black,
-                  fontfamily: 'Viga',
-                  fontsize: 24,
-                  fontweight: FontWeight.w400,
-                  text: 'Global Voice',
-                ),
-              ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        MyText(
+                          couleur: Colors.black,
+                          fontfamily: 'Viga',
+                          fontsize: 24,
+                          fontweight: FontWeight.w400,
+                          text: 'Global Voice',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: VoiceTranslationContainer(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: TranslationTextContainer(
+                      size: 0.46,
+                      linesNumber: 10,
+                      controller: targetCtrl,
+                      language: selectedSourceLanguage,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        BorderedButton(
+                          buttonText: selectedSourceLanguage,
+                          whenpressed: () => showLanguagePicker(true, context),
+                        ),
+                        const Icon(
+                          Icons.arrow_right_alt_outlined,
+                          color: lightGrey,
+                        ),
+                        BorderedButton(
+                          buttonText: selectedTargetLanguage,
+                          whenpressed: () => showLanguagePicker(false, context),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: VoiceTranslationContainer(),
-          ),
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: TranslationTextContainer(size: 0.46, linesNumber: 10),
-          ),
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                BorderedButton(buttomText: 'Auto'),
-                Icon(Icons.arrow_right_alt_outlined, color: lightGrey),
-                BorderedButton(buttomText: 'English'),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
