@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:voice_translator/screens/splash_screen.dart';
+import 'package:voice_translator/screens/home_screen.dart';
+import 'package:voice_translator/screens/launch_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,6 +12,9 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: SplashScreen());
+    return MaterialApp(
+      home: LaunchScreen(),
+      routes: {'/home': (context) => HomeScreen()},
+    );
   }
 }

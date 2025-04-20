@@ -56,3 +56,34 @@ class MyText extends StatelessWidget {
     );
   }
 }
+
+class ContinueButton extends StatelessWidget {
+  const ContinueButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: MediaQuery.of(context).size.width * 0.6,
+      height: 40,
+      child: ElevatedButton(
+        onPressed: () {
+          Navigator.pushReplacementNamed(context, '/home');
+        },
+
+        style: ButtonStyle(
+          backgroundColor: WidgetStatePropertyAll(Colors.black),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        ),
+        child: MyText(
+          couleur: Colors.white,
+          fontfamily: 'Viga',
+          fontsize: 14,
+          fontweight: FontWeight.w400,
+          text: 'Continue',
+        ),
+      ),
+    );
+  }
+}
