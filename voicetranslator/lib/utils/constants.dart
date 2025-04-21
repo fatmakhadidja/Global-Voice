@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:voice_translator/services/services.dart';
+import '../services/services.dart';
 
 const bgColor = Color(0xffF9F9F9);
 const darkGrey = Color(0xff3A3A3A);
@@ -260,63 +260,3 @@ class _BorderedButtonState extends State<BorderedButton> {
   }
 }
 
-class VoiceTranslationContainer extends StatefulWidget {
-  const VoiceTranslationContainer({super.key});
-
-  @override
-  State<VoiceTranslationContainer> createState() =>
-      _VoiceTranslationContainerState();
-}
-
-class _VoiceTranslationContainerState extends State<VoiceTranslationContainer> {
-  bool isRecording = false; // This keeps track of mic state
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      height: MediaQuery.of(context).size.height * 0.2,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            offset: const Offset(4, 4),
-            blurRadius: 10,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            MyText(
-              couleur: isRecording ? Colors.red : darkGrey,
-              fontfamily: 'Viga',
-              fontsize: 17,
-              fontweight: FontWeight.w500,
-              text: isRecording ? 'Recording...' : 'Record here ..',
-            ),
-            Center(
-              child: IconButton(
-                onPressed: () {
-                  setState(() {
-                    isRecording = !isRecording;
-                  });
-                },
-                icon: Icon(
-                  isRecording ? Icons.stop_circle_outlined : Icons.mic,
-                  size: 50,
-                  color: isRecording ? Colors.red : darkGrey,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

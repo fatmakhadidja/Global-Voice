@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:voice_translator/screens/home_screen.dart';
-import 'package:voice_translator/utils/constants.dart';
+import 'home_screen.dart';
+import '../utils/constants.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 
 class SplashScreen extends StatefulWidget {

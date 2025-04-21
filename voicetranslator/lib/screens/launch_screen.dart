@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:voice_translator/utils/constants.dart';
+import '../utils/constants.dart';
 
 class LaunchScreen extends StatelessWidget {
   const LaunchScreen({super.key});
