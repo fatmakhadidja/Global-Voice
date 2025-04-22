@@ -37,6 +37,12 @@ dependencies:
   shared_preferences: ^2.5.3
   permission_handler: ^12.0.0+1
   
+
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/ApplicationLogo.png"   
   
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -45,6 +51,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.3  
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

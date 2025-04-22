@@ -230,8 +230,8 @@ class VoiceTranslation extends StatefulWidget {
 }
 
 class _VoiceTranslationState extends State<VoiceTranslation> {
-  String selectedSourceLanguage = 'Auto';
-  String selectedTargetLanguage = 'English';
+  String selectedSourceLanguage = 'English';
+  String selectedTargetLanguage = 'Arabic';
   TextEditingController targetCtrl = TextEditingController();
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
@@ -275,23 +275,24 @@ class _VoiceTranslationState extends State<VoiceTranslation> {
       builder: (context) {
         return ListView(
           padding: const EdgeInsets.all(20),
-          children: languages.keys
-              .map(
-                (language) => ListTile(
-                  title: Text(language),
-                  onTap: () {
-                    setState(() {
-                      if (isSource) {
-                        selectedSourceLanguage = language;
-                      } else {
-                        selectedTargetLanguage = language;
-                      }
-                    });
-                    Navigator.pop(context);
-                  },
-                ),
-              )
-              .toList(),
+          children:
+              languages.keys
+                  .map(
+                    (language) => ListTile(
+                      title: Text(language),
+                      onTap: () {
+                        setState(() {
+                          if (isSource) {
+                            selectedSourceLanguage = language;
+                          } else {
+                            selectedTargetLanguage = language;
+                          }
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                  )
+                  .toList(),
         );
       },
     );
@@ -379,8 +380,9 @@ class _VoiceTranslationState extends State<VoiceTranslation> {
           ),
           VoiceTranslationContainer(
             spokenText: _spokenText,
-            isListening: _isListening,  // Pass the listening state
-            onPressMic: _toggleListening, // This will toggle start/stop listening
+            isListening: _isListening, // Pass the listening state
+            onPressMic:
+                _toggleListening, // This will toggle start/stop listening
           ),
           Expanded(
             child: SingleChildScrollView(
