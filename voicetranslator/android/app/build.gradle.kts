@@ -31,10 +31,10 @@ android {
 
    signingConfigs {
         create("release") {
-            storeFile = file("key.jks") // Make sure the file exists
-            storePassword = "mypassword" // replace with your actual password
-            keyAlias = "key" // replace with your actual key alias
-            keyPassword = "mypassword" // replace with your actual key password
+            storeFile = file("key.jks") 
+            storePassword = "mypassword" 
+            keyAlias = "key" 
+            keyPassword = "mypassword" 
         }
     }
    buildTypes {
