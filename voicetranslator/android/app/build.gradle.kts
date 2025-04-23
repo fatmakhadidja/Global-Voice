@@ -1,3 +1,5 @@
+
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -27,16 +29,27 @@ android {
         versionName = flutter.versionName
     }
 
-    buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
-            isShrinkResources = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+   signingConfigs {
+        create("release") {
+            storeFile = file("key.jks") // Make sure the file exists
+            storePassword = "mypassword" // replace with your actual password
+            keyAlias = "key" // replace with your actual key alias
+            keyPassword = "mypassword" // replace with your actual key password
         }
     }
+   buildTypes {
+    getByName("release") {
+        signingConfig = signingConfigs.getByName("release")
+        isMinifyEnabled = false
+        isShrinkResources = false
+        proguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            "proguard-rules.pro"
+        )
+    }
+}
+
+
 }
 
 flutter {
