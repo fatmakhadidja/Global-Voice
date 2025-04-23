@@ -21,7 +21,8 @@
 - [`flutter_tts`](https://pub.dev/packages/flutter_tts) – Converts text to spoken audio.
 
 ## Screenshots
-![Global Voice screenshots](https://github.com/user-attachments/assets/27fc8993-13e4-40a9-8bbe-7f6649cae36c)
+![Global Voice screenshots](https://github.com/user-attachments/assets/6832d9e9-f40b-4ed1-b32c-84d3c6bcfbad)
+
 
 
 
