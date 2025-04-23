@@ -7,7 +7,7 @@
 -  **Text-to-Text Translation**  
   Translate typed text from one language to another instantly.
 
--  **Voice-to-Text Translation**  
+-  **Speech-to-Text Translation (STT)**  
   Speak and get the translated text output with support for multiple languages.
 
 -  **Text-to-Speech (TTS)**  
