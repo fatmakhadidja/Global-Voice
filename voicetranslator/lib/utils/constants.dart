@@ -102,7 +102,7 @@ class TranslationTextContainer extends StatefulWidget {
     required this.size,
     required this.linesNumber,
     required this.controller,
-    required this.language
+    required this.language,
   });
 
   @override
@@ -114,8 +114,8 @@ class _TranslationTextContainerState extends State<TranslationTextContainer> {
   final FlutterTts flutterTts = FlutterTts();
 
   Future<void> speakText(String text) async {
-    await flutterTts.setLanguage(languages[widget.controller.text] ?? 'en');
-    await flutterTts.setSpeechRate(0.5); // Optional
+    await flutterTts.setLanguage(languages[widget.language] ?? 'en');
+    await flutterTts.setSpeechRate(0.5);
     await flutterTts.speak(text);
   }
 
@@ -260,3 +260,91 @@ class _BorderedButtonState extends State<BorderedButton> {
   }
 }
 
+void showLanguagePicker(
+  BuildContext context,
+  bool isSource,
+  String selectedSourceLanguage,
+  String selectedTargetLanguage,
+  Function(String, bool) onLanguageSelected,
+) {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return ListView.builder(
+        padding: const EdgeInsets.all(20),
+        itemCount: languages.length,
+        itemBuilder: (context, index) {
+          final language = languages.keys.elementAt(index);
+          return ListTile(
+            title: Text(language),
+            onTap: () {
+              onLanguageSelected(language, isSource);
+              Navigator.pop(context);
+            },
+          );
+        },
+      );
+    },
+  );
+}
+
+class VoiceTranslationContainer extends StatelessWidget {
+  final String spokenText;
+  final bool isListening;
+  final VoidCallback onPressMic;
+
+  const VoiceTranslationContainer({
+    super.key,
+    required this.spokenText,
+    required this.isListening,
+    required this.onPressMic,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      height: MediaQuery.of(context).size.height * 0.2,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            offset: const Offset(4, 4),
+            blurRadius: 10,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            MyText(
+              couleur: isListening ? Colors.red : darkGrey,
+              fontfamily: 'Viga',
+              fontsize: 17,
+              fontweight: FontWeight.w500,
+              text: isListening ? 'Recording...' : 'Record here ..',
+            ),
+            Center(
+              child: IconButton(
+                onPressed: onPressMic,
+                icon: Icon(
+                  isListening ? Icons.stop_circle_outlined : Icons.mic,
+                  size: 50,
+                  color: isListening ? Colors.red : darkGrey,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

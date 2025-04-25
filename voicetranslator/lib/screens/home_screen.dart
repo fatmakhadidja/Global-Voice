@@ -5,6 +5,63 @@ import '../services/services.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 
+// Global functions for reuse
+void showLanguagePicker(
+  BuildContext context,
+  bool isSource,
+  String selectedSourceLanguage,
+  String selectedTargetLanguage,
+  Function(String, bool) onLanguageSelected,
+) {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return ListView.builder(
+        padding: const EdgeInsets.all(20),
+        itemCount: languages.length,
+        itemBuilder: (context, index) {
+          final language = languages.keys.elementAt(index);
+          return ListTile(
+            title: Text(language),
+            onTap: () {
+              onLanguageSelected(language, isSource);
+              Navigator.pop(context);
+            },
+          );
+        },
+      );
+    },
+  );
+}
+
+Future<String> translateText({
+  required String text,
+  required String sourceLanguage,
+  required String targetLanguage,
+}) async {
+  if (text.trim().isEmpty) return '';
+
+  final sourceCode = languages[sourceLanguage] ?? 'en';
+  final targetCode = languages[targetLanguage] ?? 'ar';
+
+  try {
+    final translator = GoogleTranslator();
+    var translation = await translator.translate(
+      text,
+      from: sourceCode,
+      to: targetCode,
+    );
+    return translation.text;
+  } catch (e) {
+    debugPrint("Error during translation: $e");
+    throw Exception("Translation failed: $e");
+  }
+}
+
+// Main HomeScreen widget
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -15,17 +72,17 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _widgets = [
-    const TextTranslation(key: ValueKey(0)),
-    const VoiceTranslation(key: ValueKey(1)),
+  // Use const constructor to avoid unnecessary rebuilds
+  final List<Widget> _widgets = const [
+    TextTranslation(key: ValueKey(0)),
+    VoiceTranslation(key: ValueKey(1)),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-      resizeToAvoidBottomInset:
-          true, // Ensures the UI resizes when the keyboard is shown
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
@@ -47,9 +104,11 @@ class _HomeScreenState extends State<HomeScreen> {
           selectedItemColor: Colors.white,
           unselectedItemColor: lightGrey,
           onTap: (index) {
-            setState(() {
-              _selectedIndex = index;
-            });
+            if (_selectedIndex != index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            }
           },
           items: const [
             BottomNavigationBarItem(
@@ -68,6 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// Text Translation Screen
 class TextTranslation extends StatefulWidget {
   const TextTranslation({super.key});
 
@@ -76,63 +136,63 @@ class TextTranslation extends StatefulWidget {
 }
 
 class _TextTranslationState extends State<TextTranslation> {
-  TextEditingController sourceCtrl = TextEditingController();
-  TextEditingController targetCtrl = TextEditingController();
+  final TextEditingController sourceCtrl = TextEditingController();
+  final TextEditingController targetCtrl = TextEditingController();
   String selectedSourceLanguage = 'English';
   String selectedTargetLanguage = 'Arabic';
-  GoogleTranslator translator = GoogleTranslator();
 
-  void showLanguagePicker(bool isSource, BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return ListView(
-          padding: const EdgeInsets.all(20),
-          children:
-              languages.keys
-                  .map(
-                    (language) => ListTile(
-                      title: Text(language),
-                      onTap: () {
-                        setState(() {
-                          if (isSource) {
-                            selectedSourceLanguage = language;
-                            sourceCtrl.text = '';
-                          } else {
-                            selectedTargetLanguage = language;
-                            targetCtrl.text = '';
-                          }
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                  )
-                  .toList(),
-        );
-      },
-    );
+  @override
+  void dispose() {
+    // Properly dispose controllers to prevent memory leaks
+    sourceCtrl.dispose();
+    targetCtrl.dispose();
+    super.dispose();
   }
 
-  Future<void> translateText() async {
-    final sourceCode = languages[selectedSourceLanguage] ?? 'en';
-    final targetCode = languages[selectedTargetLanguage] ?? 'ar';
-    final text = sourceCtrl.text;
+  void _handleLanguageSelection(String language, bool isSource) {
+    setState(() {
+      if (isSource) {
+        selectedSourceLanguage = language;
+        sourceCtrl.text = '';
+      } else {
+        selectedTargetLanguage = language;
+        targetCtrl.text = '';
+      }
+    });
+  }
 
+  Future<void> _performTranslation() async {
     try {
-      var translation = await translator.translate(
-        text,
-        from: sourceCode,
-        to: targetCode,
+      final result = await translateText(
+        text: sourceCtrl.text,
+        sourceLanguage: selectedSourceLanguage,
+        targetLanguage: selectedTargetLanguage,
       );
-      setState(() {
-        targetCtrl.text = translation.text;
-      });
+
+      if (mounted) {
+        setState(() {
+          targetCtrl.text = result;
+        });
+      }
     } catch (e) {
-      print("Error during translation: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Translation failed: $e')));
+      }
     }
+  }
+
+  void _swapLanguages() {
+    setState(() {
+      final tempLang = selectedSourceLanguage;
+      selectedSourceLanguage = selectedTargetLanguage;
+      selectedTargetLanguage = tempLang;
+
+      final tempText = sourceCtrl.text;
+      sourceCtrl.text = targetCtrl.text;
+      targetCtrl.text = tempText;
+    });
   }
 
   @override
@@ -146,7 +206,7 @@ class _TextTranslationState extends State<TextTranslation> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                MyText(
+                const MyText(
                   couleur: Colors.black,
                   fontfamily: 'Viga',
                   fontsize: 24,
@@ -154,11 +214,11 @@ class _TextTranslationState extends State<TextTranslation> {
                   text: 'Global Voice',
                 ),
                 ElevatedButton(
-                  onPressed: translateText,
-                  style: ButtonStyle(
-                    backgroundColor: WidgetStatePropertyAll(Colors.black),
+                  onPressed: _performTranslation,
+                  style: const ButtonStyle(
+                    backgroundColor: MaterialStatePropertyAll(Colors.black),
                   ),
-                  child: MyText(
+                  child: const MyText(
                     couleur: Colors.white,
                     fontfamily: 'Viga',
                     fontsize: 12,
@@ -169,7 +229,6 @@ class _TextTranslationState extends State<TextTranslation> {
               ],
             ),
           ),
-          // Use Expanded to make sure the input fields don't overflow when the keyboard appears
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -192,26 +251,7 @@ class _TextTranslationState extends State<TextTranslation> {
                       language: selectedTargetLanguage,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        BorderedButton(
-                          buttonText: selectedSourceLanguage,
-                          whenpressed: () => showLanguagePicker(true, context),
-                        ),
-                        const Icon(
-                          Icons.arrow_right_alt_outlined,
-                          color: lightGrey,
-                        ),
-                        BorderedButton(
-                          buttonText: selectedTargetLanguage,
-                          whenpressed: () => showLanguagePicker(false, context),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildLanguageSelector(),
                 ],
               ),
             ),
@@ -220,8 +260,46 @@ class _TextTranslationState extends State<TextTranslation> {
       ),
     );
   }
+
+  Widget _buildLanguageSelector() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          BorderedButton(
+            buttonText: selectedSourceLanguage,
+            whenpressed:
+                () => showLanguagePicker(
+                  context,
+                  true,
+                  selectedSourceLanguage,
+                  selectedTargetLanguage,
+                  _handleLanguageSelection,
+                ),
+          ),
+          IconButton(
+            onPressed: _swapLanguages,
+            icon: const Icon(Icons.compare_arrows, color: lightGrey),
+          ),
+          BorderedButton(
+            buttonText: selectedTargetLanguage,
+            whenpressed:
+                () => showLanguagePicker(
+                  context,
+                  false,
+                  selectedSourceLanguage,
+                  selectedTargetLanguage,
+                  _handleLanguageSelection,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
+// Voice Translation Screen
 class VoiceTranslation extends StatefulWidget {
   const VoiceTranslation({super.key});
 
@@ -232,7 +310,7 @@ class VoiceTranslation extends StatefulWidget {
 class _VoiceTranslationState extends State<VoiceTranslation> {
   String selectedSourceLanguage = 'English';
   String selectedTargetLanguage = 'Arabic';
-  TextEditingController targetCtrl = TextEditingController();
+  final TextEditingController targetCtrl = TextEditingController();
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
   String _spokenText = "";
@@ -240,62 +318,47 @@ class _VoiceTranslationState extends State<VoiceTranslation> {
   @override
   void initState() {
     super.initState();
-    _checkPermissions(); // Ask for mic permission
+    _checkPermissions();
+  }
+
+  @override
+  void dispose() {
+    targetCtrl.dispose();
+    super.dispose();
+  }
+
+  void _handleLanguageSelection(String language, bool isSource) {
+    setState(() {
+      if (isSource) {
+        selectedSourceLanguage = language;
+      } else {
+        selectedTargetLanguage = language;
+        targetCtrl.text = '';
+      }
+    });
   }
 
   Future<void> _checkPermissions() async {
     if (await Permission.microphone.request().isGranted) {
-      print("Microphone permission granted");
+      debugPrint("Microphone permission granted");
       _initSpeech();
     } else {
-      print("Microphone permission denied");
+      debugPrint("Microphone permission denied");
     }
   }
 
   Future<void> _initSpeech() async {
     bool available = await _speech.initialize(
-      onStatus: (status) => print("Speech status: $status"),
+      onStatus: (status) => debugPrint("Speech status: $status"),
       onError: (error) {
-        print("Speech error: $error");
+        debugPrint("Speech error: $error");
         setState(() => _isListening = false);
       },
     );
 
     if (!available) {
-      print("Speech recognition is not available on this device.");
+      debugPrint("Speech recognition is not available on this device.");
     }
-  }
-
-  void showLanguagePicker(bool isSource, BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return ListView(
-          padding: const EdgeInsets.all(20),
-          children:
-              languages.keys
-                  .map(
-                    (language) => ListTile(
-                      title: Text(language),
-                      onTap: () {
-                        setState(() {
-                          if (isSource) {
-                            selectedSourceLanguage = language;
-                          } else {
-                            selectedTargetLanguage = language;
-                          }
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                  )
-                  .toList(),
-        );
-      },
-    );
   }
 
   void _toggleListening() async {
@@ -308,9 +371,9 @@ class _VoiceTranslationState extends State<VoiceTranslation> {
 
   void _startListening() async {
     bool available = await _speech.initialize(
-      onStatus: (status) => print("Speech status: $status"),
+      onStatus: (status) => debugPrint("Speech status: $status"),
       onError: (error) {
-        print("Speech error: $error");
+        debugPrint("Speech error: $error");
         setState(() => _isListening = false);
       },
     );
@@ -327,31 +390,37 @@ class _VoiceTranslationState extends State<VoiceTranslation> {
       );
       setState(() => _isListening = true);
     } else {
-      print("Speech recognition not available.");
+      debugPrint("Speech recognition not available.");
     }
   }
 
   void _stopListening() {
     _speech.stop();
     setState(() => _isListening = false);
-    _translateText();
+    _translateSpokenText();
   }
 
-  Future<void> _translateText() async {
-    final sourceCode = languages[selectedSourceLanguage] ?? 'auto';
-    final targetCode = languages[selectedTargetLanguage] ?? 'en';
+  Future<void> _translateSpokenText() async {
+    if (_spokenText.trim().isEmpty) return;
 
     try {
-      var translation = await GoogleTranslator().translate(
-        _spokenText,
-        from: sourceCode,
-        to: targetCode,
+      final result = await translateText(
+        text: _spokenText,
+        sourceLanguage: selectedSourceLanguage,
+        targetLanguage: selectedTargetLanguage,
       );
-      setState(() {
-        targetCtrl.text = translation.text;
-      });
+
+      if (mounted) {
+        setState(() {
+          targetCtrl.text = result;
+        });
+      }
     } catch (e) {
-      print("Translation failed: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Translation failed: $e')));
+      }
     }
   }
 
@@ -380,9 +449,8 @@ class _VoiceTranslationState extends State<VoiceTranslation> {
           ),
           VoiceTranslationContainer(
             spokenText: _spokenText,
-            isListening: _isListening, // Pass the listening state
-            onPressMic:
-                _toggleListening, // This will toggle start/stop listening
+            isListening: _isListening,
+            onPressMic: _toggleListening,
           ),
           Expanded(
             child: SingleChildScrollView(
@@ -397,26 +465,7 @@ class _VoiceTranslationState extends State<VoiceTranslation> {
                       language: selectedTargetLanguage,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        BorderedButton(
-                          buttonText: selectedSourceLanguage,
-                          whenpressed: () => showLanguagePicker(true, context),
-                        ),
-                        const Icon(
-                          Icons.arrow_right_alt_outlined,
-                          color: Colors.grey,
-                        ),
-                        BorderedButton(
-                          buttonText: selectedTargetLanguage,
-                          whenpressed: () => showLanguagePicker(false, context),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildLanguageSelector(),
                 ],
               ),
             ),
@@ -425,62 +474,48 @@ class _VoiceTranslationState extends State<VoiceTranslation> {
       ),
     );
   }
-}
 
-class VoiceTranslationContainer extends StatelessWidget {
-  final String spokenText;
-  final bool isListening;
-  final VoidCallback onPressMic;
-
-  const VoiceTranslationContainer({
-    super.key,
-    required this.spokenText,
-    required this.isListening,
-    required this.onPressMic,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
+  Widget _buildLanguageSelector() {
+    return Padding(
       padding: const EdgeInsets.all(8.0),
-      height: MediaQuery.of(context).size.height * 0.2,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            offset: const Offset(4, 4),
-            blurRadius: 10,
-            spreadRadius: 1,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          BorderedButton(
+            buttonText: selectedSourceLanguage,
+            whenpressed:
+                () => showLanguagePicker(
+                  context,
+                  true,
+                  selectedSourceLanguage,
+                  selectedTargetLanguage,
+                  _handleLanguageSelection,
+                ),
+          ),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                final tempLang = selectedSourceLanguage;
+                selectedSourceLanguage = selectedTargetLanguage;
+                selectedTargetLanguage = tempLang;
+              });
+            },
+            icon: const Icon(Icons.compare_arrows, color: lightGrey),
+          ),
+          BorderedButton(
+            buttonText: selectedTargetLanguage,
+            whenpressed:
+                () => showLanguagePicker(
+                  context,
+                  false,
+                  selectedSourceLanguage,
+                  selectedTargetLanguage,
+                  _handleLanguageSelection,
+                ),
           ),
         ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            MyText(
-              couleur: isListening ? Colors.red : darkGrey,
-              fontfamily: 'Viga',
-              fontsize: 17,
-              fontweight: FontWeight.w500,
-              text: isListening ? 'Recording...' : 'Record here ..',
-            ),
-            Center(
-              child: IconButton(
-                onPressed: onPressMic, // This will toggle start/stop listening
-                icon: Icon(
-                  isListening ? Icons.stop_circle_outlined : Icons.mic,
-                  size: 50,
-                  color: isListening ? Colors.red : darkGrey,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
 }
+
